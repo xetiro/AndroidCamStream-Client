@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="resolution_array">
+        <item>240p (320x240, 4:3)</item>
+        <item>360p (480x320, 4:3)</item>
+        <item>480p (640x480, 4:3)</item>
+        <item>720p (1280x720, 16:9)</item>
+        <item>1080p (1920x1080, 16:9)</item>
+    </string-array>
+</resources>

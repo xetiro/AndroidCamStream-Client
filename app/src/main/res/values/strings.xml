@@ -1,6 +1,14 @@
 <resources>
     <string name="app_name">Android TV WebRTC Demo</string>
     <string name="main_activity">MainActivity</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="camera_settings">Camera Settings</string>
+    <string name="camera_settings_description">USB Camera Image Live Preview</string>
+    <string name="account_settings">Account Settings</string>
+
+    <string name="camera_resolution">Image Resolution</string>
+    <string name="camera_resolution_480p">480p SD (640x480)</string>
+    <string name="camera_resolution_720p">720p HD Ready (1280 x 720)</string>
+    <string name="camera_resolution_1080p">1080p Full HD (1920 x 1080)</string>
+    <string name="camera_frequency">Upload Frequency</string>
+
 </resources>
