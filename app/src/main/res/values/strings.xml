@@ -3,12 +3,16 @@
     <string name="main_activity">MainActivity</string>
     <string name="camera_settings">Camera Settings</string>
     <string name="camera_settings_description">USB Camera Image Live Preview</string>
-    <string name="account_settings">Account Settings</string>
-
     <string name="camera_resolution">Image Resolution</string>
-    <string name="camera_resolution_480p">480p SD (640x480)</string>
-    <string name="camera_resolution_720p">720p HD Ready (1280 x 720)</string>
-    <string name="camera_resolution_1080p">1080p Full HD (1920 x 1080)</string>
     <string name="camera_frequency">Upload Frequency</string>
+
+    <string name="login_settings">Login Settings</string>
+    <string name="login_user_name">Username</string>
+    <string name="login_user_password">Password</string>
+    <string name="login_server_name">Server Name</string>
+    <string name="login_server_port">Server Port</string>
+
+
+
 
 </resources>
