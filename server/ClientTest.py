@@ -14,6 +14,6 @@ def sendImage(image):
     sio.emit('newImage', image)
 
 
-sio.connect('http://0.0.0.0:8080') 
+sio.connect('http://0.0.0.0:9000') 
 
 sendImage("testing sending images")

@@ -4,23 +4,18 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Environment;
+import android.util.Base64;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageCapture;
-import androidx.camera.core.ImageCaptureException;
-import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -30,9 +25,20 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+
+import io.socket.client.IO;
+import io.socket.client.Manager;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
+import io.socket.engineio.client.Transport;
+import io.socket.engineio.client.transports.WebSocket;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
@@ -40,8 +46,9 @@ public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivityDebug";
     private static int ACCESS_CAMERA_REQUEST_CODE = 1;
 
-    private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
-    private PreviewView cameraPreview;
+    private ListenableFuture<ProcessCameraProvider> mCameraProviderFuture;
+    private PreviewView mCameraPreview;
+    private Socket mSocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,13 +57,50 @@ public class MainActivity extends AppCompatActivity {
 
         setResolutionSpinner();
 
-        cameraPreview = findViewById(R.id.cameraView);
+        try {
+            mSocket = IO.socket("http://192.168.1.14:9000");
+            Log.d(TAG, "Socket.IO");
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        mCameraPreview = findViewById(R.id.cameraView);
 
         if (cameraPermissionGranted()) {
             startCameraPreview();
         } else {
             requestCameraPermission();
         }
+    }
+
+    private Emitter.Listener onConnect = args -> {
+        Log.d(TAG, "onConnect");
+        // TODO start broadcasting the camera image
+        mSocket.emit("newImage", "Hello from android...");
+    };
+
+    private Emitter.Listener onConnectionError = args -> Log.d(TAG, "onConnectionError" + args[0].toString());
+    private Emitter.Listener onDisconnect = args -> Log.d(TAG, "onDisconnect");
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        mSocket.on(Socket.EVENT_CONNECT, onConnect);
+        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectionError);
+        mSocket.on(Socket.EVENT_DISCONNECT, onDisconnect);
+
+        mSocket.connect();
+
+        Log.d(TAG, "Socket connected: " + mSocket.connected());
+    }
+
+    @Override
+    public void onPause() {
+        Log.d(TAG, "onPause");
+        super.onPause();
+        mSocket.disconnect();
+        mSocket.off(Socket.EVENT_CONNECT, onConnect);
+        mSocket.off(Socket.EVENT_DISCONNECT, onDisconnect);
     }
 
     @Override
@@ -74,10 +118,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void startCameraPreview() {
         Log.d(TAG, "startCameraPreview");
-        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-        cameraProviderFuture.addListener(() -> {
+        mCameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        mCameraProviderFuture.addListener(() -> {
             try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                ProcessCameraProvider cameraProvider = mCameraProviderFuture.get();
                 bindPreview(cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
 
@@ -91,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
         CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
 
         // Preview use-case
-        preview.setSurfaceProvider(cameraPreview.createSurfaceProvider());
+        preview.setSurfaceProvider(mCameraPreview.createSurfaceProvider());
 
         // Image Analysis use-case
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
@@ -103,6 +147,9 @@ public class MainActivity extends AppCompatActivity {
         imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(3), image -> {
             int width = image.getWidth();
             int height = image.getHeight();
+//            byte[] byteArray = image.getPlanes()[0].getBuffer().array();
+            //String encodedImage = Base64.encodeToString(, Base64.DEFAULT);
+            //Log.d(TAG, encodedImage);
             //Log.d(TAG, "Analysize: w=" + width + ", h=" + height);
             // TODO send to server at a given frequency
             image.close();
