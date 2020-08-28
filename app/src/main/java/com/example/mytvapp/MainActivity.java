@@ -4,13 +4,23 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
+import android.util.Size;
+import android.view.Surface;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -20,7 +30,9 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.io.File;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
@@ -74,13 +86,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void bindPreview(ProcessCameraProvider cameraProvider) {
-        Preview preview = new Preview.Builder().build();
+        Preview preview = new Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).setTargetRotation(Surface.ROTATION_0).build();
 
-        CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_FRONT).build();
+        CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
+
+        // Preview use-case
         preview.setSurfaceProvider(cameraPreview.createSurfaceProvider());
 
-        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview);
+        // Image Analysis use-case
+        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
+                .setTargetResolution(new Size(640, 480))
+                .setTargetRotation(Surface.ROTATION_0)
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)   // non blocking
+                .build();
 
+        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(3), image -> {
+            int width = image.getWidth();
+            int height = image.getHeight();
+            //Log.d(TAG, "Analysize: w=" + width + ", h=" + height);
+            // TODO send to server at a given frequency
+            image.close();
+        });
+
+        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, preview);
+        Log.d(TAG, "Camera rotation: " + camera.getCameraInfo().getSensorRotationDegrees());
     }
 
     private boolean cameraPermissionGranted() {

@@ -54,7 +54,7 @@
         <androidx.camera.view.PreviewView
             android:id="@+id/cameraView"
             android:layout_width="320dp"
-            android:layout_height="200dp"
+            android:layout_height="240dp"
             android:layout_marginTop="10dp"
             android:layout_gravity="center_horizontal"
             android:background="@color/lb_basic_card_info_bg_color"/>
@@ -210,6 +210,7 @@
 
         <Button
             android:id="@+id/loginButton"
+            android:onClick="onTakePictureClick"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Login and Start" />
