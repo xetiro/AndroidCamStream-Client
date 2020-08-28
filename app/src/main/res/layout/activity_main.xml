@@ -6,8 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-
-
     <TextView
         android:id="@+id/title"
         android:layout_width="wrap_content"
@@ -44,14 +42,23 @@
             android:textSize="20sp"
             android:textStyle="bold"></TextView>
 
-        <ImageView
+<!--        <ImageView
             android:layout_width="320dp"
             android:layout_height="240dp"
             android:layout_marginTop="10dp"
             android:layout_gravity="center_horizontal"
             android:background="@color/lb_basic_card_info_bg_color"
             android:contentDescription="@string/camera_settings_description">
-        </ImageView>
+        </ImageView>-->
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/cameraView"
+            android:layout_width="320dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="10dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@color/lb_basic_card_info_bg_color"/>
+
 
         <TextView
             android:layout_width="match_parent"
