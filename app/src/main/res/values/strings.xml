@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Android TV WebRTC Demo</string>
+    <string name="app_name">Camera To Server Demo</string>
     <string name="main_activity">MainActivity</string>
     <string name="camera_settings">Camera Settings</string>
     <string name="camera_settings_description">USB Camera Image Live Preview</string>
