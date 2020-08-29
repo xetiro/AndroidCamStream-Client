@@ -3,8 +3,9 @@ package com.example.mytvapp;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.graphics.ImageFormat;
+import android.graphics.YuvImage;
 import android.os.Bundle;
-import android.util.Base64;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
@@ -16,6 +17,7 @@ import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -25,23 +27,23 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.io.ByteArrayInputStream;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import io.socket.client.IO;
-import io.socket.client.Manager;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-import io.socket.engineio.client.Transport;
-import io.socket.engineio.client.transports.WebSocket;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
+/**
+ * The main activity is the one that connects the camera, grab the frames and streams the frames
+ * to the server.
+ *
+ * Created by xetiro (aka Ruben Geraldes) on 27/09/2020.
+ */
 public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivityDebug";
     private static int ACCESS_CAMERA_REQUEST_CODE = 1;
@@ -145,18 +147,44 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(3), image -> {
-            int width = image.getWidth();
-            int height = image.getHeight();
+
+
+            byte[] img64 = imageToBase64(image);
 //            byte[] byteArray = image.getPlanes()[0].getBuffer().array();
             //String encodedImage = Base64.encodeToString(, Base64.DEFAULT);
             //Log.d(TAG, encodedImage);
             //Log.d(TAG, "Analysize: w=" + width + ", h=" + height);
             // TODO send to server at a given frequency
+            mSocket.emit("newImage", img64);
             image.close();
         });
 
         Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, preview);
         Log.d(TAG, "Camera rotation: " + camera.getCameraInfo().getSensorRotationDegrees());
+    }
+
+    private byte[] imageToBase64(ImageProxy image) {
+        // Conversion based on
+        // https://stackoverflow.com/questions/56772967/converting-imageproxy-to-bitmap
+        ByteBuffer yBuffer = image.getPlanes()[0].getBuffer();
+        ByteBuffer uBuffer = image.getPlanes()[1].getBuffer();
+        ByteBuffer vBuffer = image.getPlanes()[2].getBuffer();
+
+        int ySize = yBuffer.remaining();
+        int uSize = uBuffer.remaining();
+        int vSize = vBuffer.remaining();
+
+        byte[] nv21 = new byte[ySize + uSize + vSize];
+        // U and V are swapped
+        yBuffer.get(nv21, 0, ySize);
+        vBuffer.get(nv21, ySize, vSize);
+        uBuffer.get(nv21, ySize + vSize, uSize);
+
+        YuvImage yuvImage = new YuvImage(nv21, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
+        byte[] imageBytes = yuvImage.getYuvData();
+
+        // Base64.DEFAULT adheres to RFC 2045
+        return imageBytes;//Base64.encodeToString(imageBytes, Base64.DEFAULT);
     }
 
     private boolean cameraPermissionGranted() {
