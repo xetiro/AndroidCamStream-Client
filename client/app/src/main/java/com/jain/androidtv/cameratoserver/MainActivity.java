@@ -3,9 +3,12 @@ package com.jain.androidtv.cameratoserver;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.YuvImage;
+import android.media.Image;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
@@ -28,6 +31,7 @@ import androidx.lifecycle.LifecycleOwner;
 import com.jain.androidtv.cameratoserver.network.ServerClient;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -43,10 +47,14 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivityDebug";
     private static int ACCESS_CAMERA_REQUEST_CODE = 1;
+    private static int FRAME_RATE = 5;
+    private static long DELAY_MS = 1000 / FRAME_RATE;
 
     private ListenableFuture<ProcessCameraProvider> mCameraProviderFuture;
     private PreviewView mCameraPreview;
     private ServerClient mServer;
+
+    private long mLastTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,16 +131,22 @@ public class MainActivity extends AppCompatActivity {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)   // non blocking
                 .build();
 
-        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(3), image -> {
-
-
-            byte[] img64 = imageToBase64(image);
+        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(1), image -> {
+            long elapsedTime = System.currentTimeMillis() - mLastTime;
+            if(elapsedTime > DELAY_MS) {
+                Bitmap bmp = mCameraPreview.getBitmap();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+                //String img64 = imageToBase64(image);
 //            byte[] byteArray = image.getPlanes()[0].getBuffer().array();
-            //String encodedImage = Base64.encodeToString(, Base64.DEFAULT);
-            //Log.d(TAG, encodedImage);
-            //Log.d(TAG, "Analysize: w=" + width + ", h=" + height);
-            // TODO send to server at a given frequency
-            mServer.sendPicture(img64);  // TODO actually send the picture
+                //String encodedImage = Base64.encodeToString(, Base64.DEFAULT);
+                //Log.d(TAG, encodedImage);
+                //Log.d(TAG, "Analysize: w=" + width + ", h=" + height);
+                // TODO send to server at a given frequency
+                mServer.sendPicture(byteArray);  // TODO actually send the picture
+                mLastTime = System.currentTimeMillis();
+            }
             image.close();
         });
 
@@ -140,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Camera rotation: " + camera.getCameraInfo().getSensorRotationDegrees());
     }
 
-    private byte[] imageToBase64(ImageProxy image) {
+    private String imageToBase64(ImageProxy image) {
         // Conversion based on
         // https://stackoverflow.com/questions/56772967/converting-imageproxy-to-bitmap
         ByteBuffer yBuffer = image.getPlanes()[0].getBuffer();
@@ -161,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
         byte[] imageBytes = yuvImage.getYuvData();
 
         // Base64.DEFAULT adheres to RFC 2045
-        return imageBytes;//Base64.encodeToString(imageBytes, Base64.DEFAULT);
+        return Base64.encodeToString(imageBytes, Base64.DEFAULT);
     }
 
     private boolean cameraPermissionGranted() {
