@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/My_TV_App.iml" filepath="$PROJECT_DIR$/.idea/modules/My_TV_App.iml" group="My_TV_App" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" group="My TV App/app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/AndroidTV-CameraToServer.iml" filepath="$PROJECT_DIR$/.idea/modules/AndroidTV-CameraToServer.iml" group="AndroidTV-CameraToServer" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" group="AndroidTV-CameraToServer/app" />
     </modules>
   </component>
 </project>

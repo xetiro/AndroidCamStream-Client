@@ -1,4 +1,4 @@
-package com.example.mytvapp.network;
+package com.jain.androidtv.cameratoserver.network;
 
 import android.util.Log;
 
@@ -18,7 +18,7 @@ public class ServerClient {
     public static String TAG = "ServerClientDebug";
 
     private Socket mSocket = null;
-    private String mServerIp = "http://localhost";
+    private String mServerIp = "localhost";
     private int mServerPort = 8080;
 
     private static ServerClient mInstance = null;
@@ -27,7 +27,7 @@ public class ServerClient {
         // Private constructor is part of singleton implementation
     }
 
-    public synchronized static ServerClient getmInstance() {
+    public synchronized static ServerClient getInstance() {
         if(mInstance == null) {
             mInstance = new ServerClient();
         }
@@ -39,23 +39,27 @@ public class ServerClient {
         mServerPort = port;
 
         if(mSocket == null) {
-            try {
+            try {   // Try to create the socket with the server
                 IO.Options options = new IO.Options();
-                options.host = mServerIp;
-                options.port = mServerPort;
                 options.forceNew = true;
-                options.reconnection = true;
-                options.reconnectionAttempts = 5;
-                options.reconnectionDelay = 1000;
+                options.multiplex = true;
                 options.secure = true;
-                String serverAddress = mServerIp + ":" + mServerPort;
+                options.reconnection = true;
+                options.reconnectionDelay = 1500;
+                options.reconnectionAttempts = 10;
+                String serverAddress = "http://" + mServerIp + ":" + mServerPort;
                 mSocket = IO.socket(serverAddress, options);
-            } catch(URISyntaxException e) {
-                // TODO consider to recover by asking the user to submit a new URI
-                // Otherwise we are not recovering from this failure anymore and the client will
-                // never connect to the server.
+            } catch (URISyntaxException e) {
+                // We failed to connect, consider to inform the user
                 e.printStackTrace();
             }
+        }
+
+        if(mSocket == null) {
+            // We failed to connect, consider to inform the user
+            Log.d(TAG, "Failed to create socket with the server.");
+        } else {
+            Log.d(TAG, "ServerClient initialized successfully.");
         }
     }
 
@@ -66,15 +70,23 @@ public class ServerClient {
      * from the connection state.
      */
     public void connect() {
-        registerSocketListeners();
-        mSocket.connect();
+        if(mSocket != null) {
+            registerSocketListeners();
+            mSocket.connect();
+        } else {
+            Log.d(TAG, "Cannot connect because socket is null");
+        }
     }
 
     /**
      * This is  main method issued by the client activity to stream pictures to the server.
      */
-    public void sendPicture() {
-        mSocket.emit("sendPicture", "Testing sending picture: " + System.currentTimeMillis() + ".jpg");
+    public void sendPicture(byte[] image) {
+        if(mSocket != null) {
+            mSocket.emit("newPicture", image);
+        } else {
+            Log.d(TAG, "Cannot send message because socket is null");
+        }
     }
 
     /**
@@ -83,26 +95,38 @@ public class ServerClient {
      * Unregister the socket listeners after issuing the disconnect to free resources.
      */
     public void disconnect() {
-        mSocket.disconnect();
-        unregisterSocketListeners();
+        if(mSocket != null) {
+            mSocket.disconnect();
+            unregisterSocketListeners();
+        } else {
+            Log.d(TAG, "Cannot disconnect because socket is null.");
+        }
     }
 
     private void registerSocketListeners() {
-        mSocket.on(Socket.EVENT_CONNECT, onConneted);
-        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectionError);
-        mSocket.on(Socket.EVENT_RECONNECT, onReconnecting);
-        mSocket.on(Socket.EVENT_RECONNECT_ERROR, onReconnecting);
-        mSocket.on(Socket.EVENT_DISCONNECT, onDisconnected);
-        mSocket.on(Socket.EVENT_ERROR, onEventError);
+        if(mSocket != null) {
+            mSocket.on(Socket.EVENT_CONNECT, onConneted);
+            mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectionError);
+            mSocket.on(Socket.EVENT_RECONNECT, onReconnecting);
+            mSocket.on(Socket.EVENT_RECONNECT_ERROR, onReconnecting);
+            mSocket.on(Socket.EVENT_DISCONNECT, onDisconnected);
+            mSocket.on(Socket.EVENT_ERROR, onEventError);
+        } else {
+            Log.d(TAG, "Cannot register listeners because socket is null.");
+        }
     }
 
     private void unregisterSocketListeners() {
-        mSocket.off(Socket.EVENT_CONNECT, onConneted);
-        mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectionError);
-        mSocket.off(Socket.EVENT_RECONNECT, onReconnecting);
-        mSocket.off(Socket.EVENT_RECONNECT_ERROR, onReconnecting);
-        mSocket.off(Socket.EVENT_DISCONNECT, onDisconnected);
-        mSocket.off(Socket.EVENT_ERROR, onEventError);
+        if(mSocket != null) {
+            mSocket.off(Socket.EVENT_CONNECT, onConneted);
+            mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectionError);
+            mSocket.off(Socket.EVENT_RECONNECT, onReconnecting);
+            mSocket.off(Socket.EVENT_RECONNECT_ERROR, onReconnecting);
+            mSocket.off(Socket.EVENT_DISCONNECT, onDisconnected);
+            mSocket.off(Socket.EVENT_ERROR, onEventError);
+        } else {
+            Log.d(TAG, "Cannot unregister listeners because socket is null.");
+        }
     }
 
     /**

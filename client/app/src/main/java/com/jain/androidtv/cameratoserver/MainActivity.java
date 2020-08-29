@@ -1,4 +1,4 @@
-package com.example.mytvapp;
+package com.jain.androidtv.cameratoserver;
 
 import android.Manifest;
 import android.app.AlertDialog;
@@ -25,16 +25,12 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
+import com.jain.androidtv.cameratoserver.network.ServerClient;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-
-import io.socket.client.IO;
-import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
@@ -50,21 +46,19 @@ public class MainActivity extends AppCompatActivity {
 
     private ListenableFuture<ProcessCameraProvider> mCameraProviderFuture;
     private PreviewView mCameraPreview;
-    private Socket mSocket;
+    private ServerClient mServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         setResolutionSpinner();
 
-        try {
-            mSocket = IO.socket("http://192.168.1.14:9000");
-            Log.d(TAG, "Socket.IO");
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
+        mServer = ServerClient.getInstance();
+        mServer.init("192.168.1.14", 9000);
+
         mCameraPreview = findViewById(R.id.cameraView);
 
         if (cameraPermissionGranted()) {
@@ -74,35 +68,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private Emitter.Listener onConnect = args -> {
-        Log.d(TAG, "onConnect");
-        // TODO start broadcasting the camera image
-        mSocket.emit("newImage", "Hello from android...");
-    };
-
-    private Emitter.Listener onConnectionError = args -> Log.d(TAG, "onConnectionError" + args[0].toString());
-    private Emitter.Listener onDisconnect = args -> Log.d(TAG, "onDisconnect");
-
     @Override
     public void onResume() {
+        Log.d(TAG, "onResume");
         super.onResume();
-
-        mSocket.on(Socket.EVENT_CONNECT, onConnect);
-        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectionError);
-        mSocket.on(Socket.EVENT_DISCONNECT, onDisconnect);
-
-        mSocket.connect();
-
-        Log.d(TAG, "Socket connected: " + mSocket.connected());
+        mServer.connect();
     }
 
     @Override
     public void onPause() {
         Log.d(TAG, "onPause");
         super.onPause();
-        mSocket.disconnect();
-        mSocket.off(Socket.EVENT_CONNECT, onConnect);
-        mSocket.off(Socket.EVENT_DISCONNECT, onDisconnect);
+        mServer.disconnect();
     }
 
     @Override
@@ -155,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
             //Log.d(TAG, encodedImage);
             //Log.d(TAG, "Analysize: w=" + width + ", h=" + height);
             // TODO send to server at a given frequency
-            mSocket.emit("newImage", img64);
+            mServer.sendPicture(img64);  // TODO actually send the picture
             image.close();
         });
 

@@ -5,7 +5,7 @@ android {
     buildToolsVersion "30.0.0"
 
     defaultConfig {
-        applicationId "com.example.mytvapp"
+        applicationId "com.jain.androidtv.cameratoserver"
         minSdkVersion 23
         targetSdkVersion 29
         versionCode 1
@@ -33,6 +33,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
     implementation 'androidx.preference:preference:1.1.1'
+    implementation 'androidx.wear:wear:1.0.0'
 
     // CameraX core library using the camera2 implementation
     def camerax_version = "1.0.0-beta08"
@@ -50,5 +51,6 @@ dependencies {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'
     }
+    compileOnly 'com.google.android.wearable:wearable:2.5.0'
 
 }
