@@ -28,7 +28,7 @@ public class ServerClient {
     }
 
     public synchronized static ServerClient getInstance() {
-        if(mInstance == null) {
+        if (mInstance == null) {
             mInstance = new ServerClient();
         }
         return mInstance;
@@ -38,14 +38,14 @@ public class ServerClient {
         mServerIp = serverIp;
         mServerPort = port;
 
-        if(mSocket == null) {
+        if (mSocket == null) {
             try {   // Try to create the socket with the server
                 IO.Options options = new IO.Options();
                 options.forceNew = true;
                 options.multiplex = true;
                 options.secure = true;
                 options.reconnection = true;
-                options.reconnectionDelay = 1500;
+                options.reconnectionDelay = 5000;
                 options.reconnectionAttempts = 10;
                 String serverAddress = "http://" + mServerIp + ":" + mServerPort;
                 mSocket = IO.socket(serverAddress, options);
@@ -55,7 +55,7 @@ public class ServerClient {
             }
         }
 
-        if(mSocket == null) {
+        if (mSocket == null) {
             // We failed to connect, consider to inform the user
             Log.d(TAG, "Failed to create socket with the server.");
         } else {
@@ -65,12 +65,12 @@ public class ServerClient {
 
     /**
      * The connection to the server is explicitly issued by client activities.
-     *
+     * <p>
      * Register the socket listeners just before trying to connect, so we can receive feedback
      * from the connection state.
      */
     public void connect() {
-        if(mSocket != null) {
+        if (mSocket != null) {
             registerSocketListeners();
             mSocket.connect();
         } else {
@@ -81,9 +81,9 @@ public class ServerClient {
     /**
      * This is  main method issued by the client activity to stream pictures to the server.
      */
-    public void sendPicture(byte[] image) {
-        if(mSocket != null) {
-            mSocket.emit("newPicture", image);
+    public void sendImage(byte[] image) {
+        if (mSocket != null) {
+            mSocket.emit("receiveImage", image);
         } else {
             Log.d(TAG, "Cannot send message because socket is null");
         }
@@ -91,11 +91,11 @@ public class ServerClient {
 
     /**
      * Client activities might issue an explicit disconnect at anytime.
-     *
+     * <p>
      * Unregister the socket listeners after issuing the disconnect to free resources.
      */
     public void disconnect() {
-        if(mSocket != null) {
+        if (mSocket != null) {
             mSocket.disconnect();
             unregisterSocketListeners();
         } else {
@@ -104,7 +104,7 @@ public class ServerClient {
     }
 
     private void registerSocketListeners() {
-        if(mSocket != null) {
+        if (mSocket != null) {
             mSocket.on(Socket.EVENT_CONNECT, onConneted);
             mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectionError);
             mSocket.on(Socket.EVENT_RECONNECT, onReconnecting);
@@ -117,7 +117,7 @@ public class ServerClient {
     }
 
     private void unregisterSocketListeners() {
-        if(mSocket != null) {
+        if (mSocket != null) {
             mSocket.off(Socket.EVENT_CONNECT, onConneted);
             mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectionError);
             mSocket.off(Socket.EVENT_RECONNECT, onReconnecting);
@@ -137,7 +137,7 @@ public class ServerClient {
         public void call(Object... args) {
             // We connected to the server successfully
             String reason = "no reason received.";
-            if(args.length > 1) {
+            if (args.length > 1) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Connected to the server: " + reason);
@@ -150,7 +150,7 @@ public class ServerClient {
             // We got an error while trying to connect
             // The socket will try to reconnect automatically as many times we set on the options
             String reason = "no reason received.";
-            if(args.length > 1) {
+            if (args.length > 1) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Error while trying to connect: " + reason);
@@ -170,7 +170,7 @@ public class ServerClient {
         public void call(Object... args) {
             // We fail to reconnect
             String reason = "no reason received.";
-            if(args.length > 1) {
+            if (args.length > 1) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Reconnection failed: " + reason);
@@ -182,7 +182,7 @@ public class ServerClient {
         public void call(Object... args) {
             // We were disconnected from the server
             String reason = "no reason received.";
-            if(args.length > 1) {
+            if (args.length > 1) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Disconnected from the server: " + reason);
@@ -194,7 +194,7 @@ public class ServerClient {
         public void call(Object... args) {
             // Something went wrong with an event
             String reason = "no reason received.";
-            if(args.length > 1) {
+            if (args.length > 1) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Something went wrong with the last event: " + reason);

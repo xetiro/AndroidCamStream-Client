@@ -3,24 +3,16 @@ package com.jain.androidtv.cameratoserver;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.graphics.Bitmap;
-import android.graphics.ImageFormat;
-import android.graphics.YuvImage;
-import android.media.Image;
 import android.os.Bundle;
-import android.util.Base64;
 import android.util.Log;
 import android.util.Size;
-import android.view.Surface;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -28,11 +20,10 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
-import com.jain.androidtv.cameratoserver.network.ServerClient;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.jain.androidtv.cameratoserver.network.ServerClient;
+import com.jain.androidtv.cameratoserver.utils.ImageConverter;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
@@ -41,7 +32,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 /**
  * The main activity is the one that connects the camera, grab the frames and streams the frames
  * to the server.
- *
+ * <p>
  * Created by xetiro (aka Ruben Geraldes) on 27/09/2020.
  */
 public class MainActivity extends AppCompatActivity {
@@ -53,6 +44,14 @@ public class MainActivity extends AppCompatActivity {
     private ListenableFuture<ProcessCameraProvider> mCameraProviderFuture;
     private PreviewView mCameraPreview;
     private ServerClient mServer;
+
+    // The Bitmap image from camera preview is converted to JPEG without artifacts
+    // The YUV image from the image Analysis when converted to JPEG sometimes can create artifacts
+    // because the conversion might fail for some cameras
+    private boolean useImageFromCameraPreview = true;
+
+    private int mTargetWidth = 320;
+    private int mTargetHeight = 240;
 
     private long mLastTime = 0;
 
@@ -117,34 +116,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void bindPreview(ProcessCameraProvider cameraProvider) {
-        Preview preview = new Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).setTargetRotation(Surface.ROTATION_0).build();
+        Preview preview = new Preview.Builder().build();
 
         CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
 
-        // Preview use-case
+        // Preview use-case will render a preview image on the screen as defined by the PreviewView
+        // element on the main's layout activity. The resolution of the layout is relative to the
+        // screen size and defined in dp, which means the final resolution in pixels will be decided
+        // at run-time when the layout is inflated to the device screen. But will always be proportional
+        // to the resolution defined on the layout.
         preview.setSurfaceProvider(mCameraPreview.createSurfaceProvider());
 
-        // Image Analysis use-case
+        // Image Analysis use-case will not render the image on the screen, but will
+        // deliver a frame by frame image (stream) directly from the camera buffer to the analyser.
+        // On this case we can set an actual target resolution as defined by the user. CameraX will
+        // try to match the captured resolution to the target resolution. If it cannot match, will
+        // capture the frame with the resolution immediately above.
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setTargetResolution(new Size(640, 480))
-                .setTargetRotation(Surface.ROTATION_0)
+                .setTargetResolution(new Size(mTargetWidth, mTargetHeight))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)   // non blocking
                 .build();
 
         imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(1), image -> {
             long elapsedTime = System.currentTimeMillis() - mLastTime;
-            if(elapsedTime > DELAY_MS) {
-                Bitmap bmp = mCameraPreview.getBitmap();
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                bmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                byte[] byteArray = stream.toByteArray();
-                //String img64 = imageToBase64(image);
-//            byte[] byteArray = image.getPlanes()[0].getBuffer().array();
-                //String encodedImage = Base64.encodeToString(, Base64.DEFAULT);
-                //Log.d(TAG, encodedImage);
-                //Log.d(TAG, "Analysize: w=" + width + ", h=" + height);
-                // TODO send to server at a given frequency
-                mServer.sendPicture(byteArray);  // TODO actually send the picture
+            if (elapsedTime > DELAY_MS) {   // Bound the image processing by the user defined frame-rate
+                byte[] byteArray;
+                if (useImageFromCameraPreview) {
+                    byteArray = ImageConverter.BitmaptoJPEG(mCameraPreview.getBitmap());
+                } else {
+                    byteArray = ImageConverter.YUV_420_800toJPEG(image);
+                }
+                mServer.sendImage(byteArray);
                 mLastTime = System.currentTimeMillis();
             }
             image.close();
@@ -152,30 +154,6 @@ public class MainActivity extends AppCompatActivity {
 
         Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, preview);
         Log.d(TAG, "Camera rotation: " + camera.getCameraInfo().getSensorRotationDegrees());
-    }
-
-    private String imageToBase64(ImageProxy image) {
-        // Conversion based on
-        // https://stackoverflow.com/questions/56772967/converting-imageproxy-to-bitmap
-        ByteBuffer yBuffer = image.getPlanes()[0].getBuffer();
-        ByteBuffer uBuffer = image.getPlanes()[1].getBuffer();
-        ByteBuffer vBuffer = image.getPlanes()[2].getBuffer();
-
-        int ySize = yBuffer.remaining();
-        int uSize = uBuffer.remaining();
-        int vSize = vBuffer.remaining();
-
-        byte[] nv21 = new byte[ySize + uSize + vSize];
-        // U and V are swapped
-        yBuffer.get(nv21, 0, ySize);
-        vBuffer.get(nv21, ySize, vSize);
-        uBuffer.get(nv21, ySize + vSize, uSize);
-
-        YuvImage yuvImage = new YuvImage(nv21, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
-        byte[] imageBytes = yuvImage.getYuvData();
-
-        // Base64.DEFAULT adheres to RFC 2045
-        return Base64.encodeToString(imageBytes, Base64.DEFAULT);
     }
 
     private boolean cameraPermissionGranted() {
@@ -217,4 +195,6 @@ public class MainActivity extends AppCompatActivity {
         // Apply the adapter to the spinner
         spinner.setAdapter(adapter);
     }
+
+
 }

@@ -6,11 +6,10 @@ import eventlet
 import socketio
 import cv2
 import numpy as np
-import base64
 from engineio.payload import Payload
 
-# Default was 16 which can create a bootleneck for video streaming
-Payload.max_decode_packets = 64
+# Default is 16 which can create a bootleneck for video streaming
+Payload.max_decode_packets = 256
 
 sio = socketio.Server()
 app = socketio.WSGIApp(sio)
@@ -18,19 +17,21 @@ app = socketio.WSGIApp(sio)
 @sio.event
 def connect(sid, environ):
     print('connect', sid)
-    
 
+# Each receiveImage event is already processed in a new thread
 @sio.event
-def newPicture(sid, data):
-    #print(len(data))
-    show(sid, data)
+def receiveImage(sid, imageBytes):
+    print(len(imageBytes))
+    show(sid, imageBytes)
 
 @sio.event
 def disconnect(sid):
     print('disconnect', sid)
+    # Avoids to keep a freezing window in case you used the show method
+    cv2.destroyAllWindows
 
-def show(sid, img_bytes):
-    nparr = np.frombuffer(img_bytes, np.uint8)
+def show(sid, imageBytes):
+    nparr = np.frombuffer(imageBytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR) # cv2.IMREAD_COLOR in OpenCV 3.1
     cv2.imshow("Image Stream from " + sid, img)
     cv2.waitKey(1)
