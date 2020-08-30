@@ -18,9 +18,13 @@ app = socketio.WSGIApp(sio)
 def connect(sid, environ):
     print('connect', sid)
 
-# Each receiveImage event is already processed in a new thread
+# This is the main method that the client calls when streaming the pictures to 
+# the server. Each receiveImage event is already processed in a new thread.
+# The image format is JPEG and is sent by the client in as binary data of byte[] 
+# received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes):
+    # Process the image
     print(len(imageBytes))
     show(sid, imageBytes)
 
