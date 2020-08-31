@@ -28,6 +28,8 @@ public class LoginActivity extends AppCompatActivity implements ServerResultCall
     private TextView mServerIpTextView;
     private TextView mServerPortTextView;
 
+    private ServerClient mServer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -54,15 +56,16 @@ public class LoginActivity extends AppCompatActivity implements ServerResultCall
                 login(username, password, serverIp, serverPort);
             }
         });
+
+        mServer = ServerClient.getInstance();
     }
 
     private void login(String username, String password, String serverIp, String serverPort) {
         // Very basic sanity check. Not robust enough to use outside the scope of prototype experiment.
         if(username.length() > 0 && password.length() > 0 && serverIp.length() > 0 && serverPort.length() > 0) {
-            ServerClient clientInstance = ServerClient.getInstance();
             int port = Integer.parseInt(serverPort);
-            clientInstance.init(username, password, serverIp, port);
-            clientInstance.connect();
+            mServer.init(username, password, serverIp, port);
+            mServer.connect();
         } else {
             Toast invalidLogin = Toast.makeText(this, R.string.toast_invalid_login, Toast.LENGTH_LONG);
             invalidLogin.setGravity(Gravity.CENTER, 0, 0);
@@ -74,16 +77,17 @@ public class LoginActivity extends AppCompatActivity implements ServerResultCall
     public void onResume() {
         Log.d(TAG, "onResume");
         super.onResume();
-        ServerClient.getInstance().registerCallback(this);
+        mServer.registerCallback(this);
     }
 
     @Override
     public void onPause() {
         Log.d(TAG, "onPause");
         super.onPause();
-        ServerClient.getInstance().unregisterCallback();
+        mServer.unregisterCallback();
     }
 
+    @Override
     public void onConnected(boolean success) {
         Log.d(TAG, "ServerResultCallback-onConnected: " + success);
         if(success) {

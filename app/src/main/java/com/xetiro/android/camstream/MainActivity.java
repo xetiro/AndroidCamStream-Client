@@ -3,12 +3,17 @@ package com.xetiro.android.camstream;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
+import android.view.Gravity;
 import android.widget.ArrayAdapter;
+import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
@@ -23,6 +28,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.xetiro.android.camstream.network.ServerClient;
+import com.xetiro.android.camstream.network.ServerResultCallback;
 import com.xetiro.android.camstream.utils.ImageConverter;
 
 import java.util.concurrent.ExecutionException;
@@ -39,8 +45,6 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivityDebug";
     private static int ACCESS_CAMERA_REQUEST_CODE = 1;
-    private static int FRAME_RATE = 3;
-    private static long DELAY_MS = 1000 / FRAME_RATE;
 
     private ListenableFuture<ProcessCameraProvider> mCameraProviderFuture;
     private PreviewView mCameraPreview;
@@ -55,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
     private int mTargetHeight = 240;
 
     private long mLastTime = 0;
+    private long mUploadDelay = 0;
+
+    private SeekBar mFrequencySeekBar;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,9 +73,27 @@ public class MainActivity extends AppCompatActivity {
         setResolutionSpinner();
 
         mServer = ServerClient.getInstance();
-        mServer.init("", "", "192.168.1.6", 9000);
 
         mCameraPreview = findViewById(R.id.cameraView);
+        mFrequencySeekBar = findViewById(R.id.frequencySeekBar);
+        updateStreamingFrequency(mFrequencySeekBar.getProgress());
+
+        mFrequencySeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                updateStreamingFrequency(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
 
         if (cameraPermissionGranted()) {
             startCameraPreview();
@@ -100,6 +126,20 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Log.d(TAG, "Camera Permission Denied");
             }
+        }
+    }
+
+    private void startStreaming() {
+
+    }
+
+    private void updateStreamingFrequency(int frequency) {
+        TextView frequencyTextView = findViewById(R.id.frequency);
+        frequencyTextView.setText("" + frequency + " hz");
+        if(frequency == 0) {
+            mUploadDelay = 0;
+        } else {
+            mUploadDelay = 1000 / frequency;
         }
     }
 
@@ -138,9 +178,9 @@ public class MainActivity extends AppCompatActivity {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)   // non blocking
                 .build();
 
-        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(5), image -> {
+        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(3), image -> {
             long elapsedTime = System.currentTimeMillis() - mLastTime;
-            if (elapsedTime > DELAY_MS) {   // Bound the image processing by the user defined frame-rate
+            if (elapsedTime > mUploadDelay && mUploadDelay != 0) {   // Bound the image upload based on the user-defined frequency
                 byte[] byteArray;
                 if (useImageFromCameraPreview) {
                     Bitmap bmp = mCameraPreview.getBitmap();

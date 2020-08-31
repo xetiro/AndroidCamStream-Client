@@ -73,7 +73,7 @@
             android:textSize="16sp"></TextView>
 
         <TextView
-            android:id="@+id/uploadFrequency"
+            android:id="@+id/frequency"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
@@ -84,7 +84,7 @@
             android:textStyle="bold"></TextView>
 
         <SeekBar
-            android:id="@+id/seekBar"
+            android:id="@+id/frequencySeekBar"
             style="@style/Widget.AppCompat.SeekBar.Discrete"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -95,7 +95,7 @@ public class ServerClient {
             registerSocketListeners();
             mSocket.connect();
         } else {
-            Log.d(TAG, "Cannot connect because socket is null or already connected or åusername isn't defined.");
+            Log.d(TAG, "Cannot connect because socket is null or already connected or username isn't defined.");
         }
     }
 
