@@ -1,3 +1,5 @@
 <resources>
     <color name="black_overlay">#66000000</color>
+    <color name="streaming_stop">#D32F2F</color>
+    <color name="streaming_start">#388E3C</color>
 </resources>

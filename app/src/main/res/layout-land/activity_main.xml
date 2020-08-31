@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    tools:context=".MainActivity">
 
     <TextView
         android:id="@+id/title"
@@ -17,18 +19,49 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
 
-        android:minWidth="300dp"
-        android:orientation="vertical"
+    <androidx.camera.view.PreviewView
+        android:id="@+id/cameraView"
+        android:layout_width="320dp"
+        android:layout_height="240dp"
+        android:background="@color/lb_basic_card_info_bg_color"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.15"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/title"
-        app:layout_constraintVertical_bias="0.35000002">
+        app:layout_constraintVertical_bias="0.504" />
 
+    <LinearLayout
+        android:id="@+id/streamSettings"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:orientation="vertical"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toBottomOf="@+id/cameraView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/cameraView"
+        app:layout_constraintWidth_max="280dp"
+        app:layout_constraintWidth_min="200dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginStart="10dp"
+            android:text="@string/camera_resolution"
+            android:textSize="16sp"></TextView>
+
+        <Spinner
+            android:id="@+id/cameraResolutionSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="10dp" />
 
         <TextView
             android:layout_width="match_parent"
@@ -36,77 +69,35 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginStart="10dp"
             android:layout_marginTop="10dp"
-            android:text="@string/login_user_name"
+            android:text="@string/camera_frequency"
             android:textSize="16sp"></TextView>
 
-        <EditText
-            android:id="@+id/editTextUsername"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPersonName"
-            android:textSize="16sp" />
-
         <TextView
+            android:id="@+id/uploadFrequency"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginStart="10dp"
             android:layout_marginTop="10dp"
-            android:text="@string/login_user_password"
-            android:textSize="16sp"></TextView>
+            android:text="3 hz"
+            android:textAlignment="center"
+            android:textSize="16sp"
+            android:textStyle="bold"></TextView>
 
-        <EditText
-            android:id="@+id/editTextPassword"
+        <SeekBar
+            android:id="@+id/seekBar"
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPassword"
-            android:textSize="16sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginStart="10dp"
-            android:layout_marginTop="10dp"
-            android:text="@string/login_server_name"
-            android:textSize="16sp"></TextView>
-
-
-        <EditText
-            android:id="@+id/editTextServerIp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="(e.g. 193.16.18.14)"
-            android:inputType="textPersonName"
-            android:textSize="16sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginStart="10dp"
-            android:layout_marginTop="10dp"
-            android:text="@string/login_server_port"
-            android:textSize="16sp"></TextView>
-
-        <EditText
-            android:id="@+id/editTextServerPort"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="(e.g. 9000)"
-            android:inputType="number"
-            android:textSize="16sp" />
+            android:layout_marginTop="2dp"
+            android:max="10"
+            android:progress="3" />
 
         <Button
-            android:id="@+id/loginButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="@string/login_button" />
+            android:backgroundTint="@color/streaming_start"
+            android:text="@string/start_button" />
 
     </LinearLayout>
 

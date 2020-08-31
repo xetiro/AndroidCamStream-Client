@@ -1,14 +1,17 @@
 <resources>
     <!-- Global strings -->
-    <string name="app_name">Android Camera Streaming Demo</string>
+    <string name="app_name">Camera Stream Demo</string>
     <string name="main_activity">MainActivity</string>
     <string name="title_activity_login">LoginActivity</string>
 
     <!-- Camera layout strings -->
-    <string name="camera_settings">Camera Settings</string>
-    <string name="camera_settings_description">USB Camera Image Live Preview</string>
+    <string name="live_feed">Live Camera Feed</string>
+    <string name="live_feed_description">USB Camera Image Live Preview</string>
+    <string name="streaming_settings">Streaming Settings</string>
     <string name="camera_resolution">Image Resolution</string>
     <string name="camera_frequency">Upload Frequency</string>
+    <string name="start_button">Start Streaming</string>
+    <string name="stop_button">Stop Streaming</string>
 
     <!-- Login layout strings -->
     <string name="login_settings">Login Settings</string>
