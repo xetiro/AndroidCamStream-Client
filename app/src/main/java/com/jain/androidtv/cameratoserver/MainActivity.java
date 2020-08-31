@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         setResolutionSpinner();
 
         mServer = ServerClient.getInstance();
-        mServer.init("192.168.1.14", 9000);
+        mServer.init("192.168.3.6", 9000);
 
         mCameraPreview = findViewById(R.id.cameraView);
 
@@ -195,6 +195,4 @@ public class MainActivity extends AppCompatActivity {
         // Apply the adapter to the spinner
         spinner.setAdapter(adapter);
     }
-
-
 }
