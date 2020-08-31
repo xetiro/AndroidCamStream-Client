@@ -82,10 +82,10 @@ public class ServerClient {
      * This is  main method issued by the client activity to stream pictures to the server.
      */
     public void sendImage(byte[] image) {
-        if (mSocket != null) {
+        if (mSocket != null && mSocket.connected()) {
             mSocket.emit("receiveImage", image);
         } else {
-            Log.d(TAG, "Cannot send message because socket is null");
+            Log.d(TAG, "Cannot send message because socket is null or disconnected");
         }
     }
 

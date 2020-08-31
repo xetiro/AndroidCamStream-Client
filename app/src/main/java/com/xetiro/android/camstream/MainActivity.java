@@ -3,6 +3,7 @@ package com.xetiro.android.camstream;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
@@ -38,7 +39,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivityDebug";
     private static int ACCESS_CAMERA_REQUEST_CODE = 1;
-    private static int FRAME_RATE = 5;
+    private static int FRAME_RATE = 3;
     private static long DELAY_MS = 1000 / FRAME_RATE;
 
     private ListenableFuture<ProcessCameraProvider> mCameraProviderFuture;
@@ -64,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         setResolutionSpinner();
 
         mServer = ServerClient.getInstance();
-        mServer.init("192.168.3.6", 9000);
+        mServer.init("192.168.1.6", 9000);
 
         mCameraPreview = findViewById(R.id.cameraView);
 
@@ -137,12 +138,13 @@ public class MainActivity extends AppCompatActivity {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)   // non blocking
                 .build();
 
-        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(1), image -> {
+        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(5), image -> {
             long elapsedTime = System.currentTimeMillis() - mLastTime;
             if (elapsedTime > DELAY_MS) {   // Bound the image processing by the user defined frame-rate
                 byte[] byteArray;
                 if (useImageFromCameraPreview) {
-                    byteArray = ImageConverter.BitmaptoJPEG(mCameraPreview.getBitmap());
+                    Bitmap bmp = mCameraPreview.getBitmap();
+                    byteArray = ImageConverter.BitmaptoJPEG(bmp);
                 } else {
                     byteArray = ImageConverter.YUV_420_800toJPEG(image);
                 }
