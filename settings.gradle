@@ -1,2 +1,2 @@
 include ':app'
-rootProject.name = "AndroidTV-CameraToServer"
+rootProject.name = "AndroidCamStream"

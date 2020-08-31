@@ -5,7 +5,7 @@ android {
     buildToolsVersion "30.0.0"
 
     defaultConfig {
-        applicationId "com.jain.androidtv.cameratoserver"
+        applicationId "com.xetiro.android.camstream"
         minSdkVersion 23
         targetSdkVersion 29
         versionCode 1
@@ -51,6 +51,4 @@ dependencies {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'
     }
-    compileOnly 'com.google.android.wearable:wearable:2.5.0'
-
 }

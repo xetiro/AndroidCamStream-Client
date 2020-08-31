@@ -1,4 +1,4 @@
-package com.jain.androidtv.cameratoserver.utils;
+package com.xetiro.android.camstream.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;

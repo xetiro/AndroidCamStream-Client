@@ -1,4 +1,4 @@
-package com.jain.androidtv.cameratoserver;
+package com.xetiro.android.camstream;
 
 import android.Manifest;
 import android.app.AlertDialog;
@@ -21,8 +21,8 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.jain.androidtv.cameratoserver.network.ServerClient;
-import com.jain.androidtv.cameratoserver.utils.ImageConverter;
+import com.xetiro.android.camstream.network.ServerClient;
+import com.xetiro.android.camstream.utils.ImageConverter;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;

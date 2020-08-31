@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Camera To Server Demo</string>
+    <string name="app_name">Camera Streaming Demo</string>
     <string name="main_activity">MainActivity</string>
     <string name="camera_settings">Camera Settings</string>
     <string name="camera_settings_description">USB Camera Image Live Preview</string>
@@ -15,11 +15,5 @@
     <string name="request_camera_title">Camera Access Needed</string>
     <string name="request_camera_message">This is a prototype demo that streams camera frames to a server. Without camera access it is useless.</string>
     <string name="title_activity_login">LoginActivity</string>
-    <!--
-    This string is used for square devices and overridden by hello_world in
-    values-round/strings.xml for round devices.
-    -->
-    <string name="hello_world">Hello Square World!</string>
-
 
 </resources>

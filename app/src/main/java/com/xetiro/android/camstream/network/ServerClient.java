@@ -1,4 +1,4 @@
-package com.jain.androidtv.cameratoserver.network;
+package com.xetiro.android.camstream.network;
 
 import android.util.Log;
 
