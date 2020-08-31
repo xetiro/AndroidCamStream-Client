@@ -17,9 +17,17 @@ import io.socket.emitter.Emitter;
 public class ServerClient {
     public static String TAG = "ServerClientDebug";
 
+    private static String EVENT_AUTHENTICATION = "onAuthentication";
+
     private Socket mSocket = null;
     private String mServerIp = "localhost";
     private int mServerPort = 8080;
+
+    private String mUsername = null;
+    private String mPassword = null;
+
+    // A single callback to the client aimed to be registered by the current Activity
+    private ServerResultCallback mSingleCallback = null;
 
     private static ServerClient mInstance = null;
 
@@ -34,7 +42,9 @@ public class ServerClient {
         return mInstance;
     }
 
-    public void init(String serverIp, int port) {
+    public void init(String username, String password, String serverIp, int port) {
+        mUsername = username;
+        mPassword = password;
         mServerIp = serverIp;
         mServerPort = port;
 
@@ -49,18 +59,28 @@ public class ServerClient {
                 options.reconnectionAttempts = 10;
                 String serverAddress = "http://" + mServerIp + ":" + mServerPort;
                 mSocket = IO.socket(serverAddress, options);
+                Log.d(TAG, "ServerClient initialized successfully.");
             } catch (URISyntaxException e) {
                 // We failed to connect, consider to inform the user
                 e.printStackTrace();
             }
+        } else {
+            Log.d(TAG, "ServerClient already initialized.");
         }
 
+        // If it is still null its because it failed to initialize
         if (mSocket == null) {
             // We failed to connect, consider to inform the user
             Log.d(TAG, "Failed to create socket with the server.");
-        } else {
-            Log.d(TAG, "ServerClient initialized successfully.");
         }
+    }
+
+    public void registerCallback(ServerResultCallback callback) {
+        mSingleCallback = callback;
+    }
+
+    public void unregisterCallback() {
+        mSingleCallback = null;
     }
 
     /**
@@ -70,11 +90,12 @@ public class ServerClient {
      * from the connection state.
      */
     public void connect() {
-        if (mSocket != null) {
+        if (mSocket != null && !mSocket.connected() && mUsername != null) {
+            unregisterSocketListeners();
             registerSocketListeners();
             mSocket.connect();
         } else {
-            Log.d(TAG, "Cannot connect because socket is null");
+            Log.d(TAG, "Cannot connect because socket is null or already connected or åusername isn't defined.");
         }
     }
 
@@ -110,6 +131,7 @@ public class ServerClient {
             mSocket.on(Socket.EVENT_RECONNECT, onReconnecting);
             mSocket.on(Socket.EVENT_RECONNECT_ERROR, onReconnecting);
             mSocket.on(Socket.EVENT_DISCONNECT, onDisconnected);
+            mSocket.on(EVENT_AUTHENTICATION, onAuthentication);
             mSocket.on(Socket.EVENT_ERROR, onEventError);
         } else {
             Log.d(TAG, "Cannot register listeners because socket is null.");
@@ -123,6 +145,7 @@ public class ServerClient {
             mSocket.off(Socket.EVENT_RECONNECT, onReconnecting);
             mSocket.off(Socket.EVENT_RECONNECT_ERROR, onReconnecting);
             mSocket.off(Socket.EVENT_DISCONNECT, onDisconnected);
+            mSocket.off(EVENT_AUTHENTICATION, onAuthentication);
             mSocket.off(Socket.EVENT_ERROR, onEventError);
         } else {
             Log.d(TAG, "Cannot unregister listeners because socket is null.");
@@ -136,11 +159,8 @@ public class ServerClient {
         @Override
         public void call(Object... args) {
             // We connected to the server successfully
-            String reason = "no reason received.";
-            if (args.length > 1) {
-                reason = args[0].toString();
-            }
-            Log.d(TAG, "Connected to the server: " + reason);
+            Log.d(TAG, "Connected to the server! Starting authentication...");
+            mSocket.emit("authenticate", mUsername, mPassword, EVENT_AUTHENTICATION);
         }
     };
 
@@ -150,7 +170,7 @@ public class ServerClient {
             // We got an error while trying to connect
             // The socket will try to reconnect automatically as many times we set on the options
             String reason = "no reason received.";
-            if (args.length > 1) {
+            if (args.length > 0) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Error while trying to connect: " + reason);
@@ -170,7 +190,7 @@ public class ServerClient {
         public void call(Object... args) {
             // We fail to reconnect
             String reason = "no reason received.";
-            if (args.length > 1) {
+            if (args.length > 0) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Reconnection failed: " + reason);
@@ -182,10 +202,21 @@ public class ServerClient {
         public void call(Object... args) {
             // We were disconnected from the server
             String reason = "no reason received.";
-            if (args.length > 1) {
+            if (args.length > 0) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Disconnected from the server: " + reason);
+        }
+    };
+
+    private Emitter.Listener onAuthentication = new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            boolean result = (boolean) args[0];
+            if(mSingleCallback != null) {
+                mSingleCallback.onConnected(result);
+            }
+            Log.d(TAG, "onAuthentication: " + result);
         }
     };
 
@@ -194,7 +225,7 @@ public class ServerClient {
         public void call(Object... args) {
             // Something went wrong with an event
             String reason = "no reason received.";
-            if (args.length > 1) {
+            if (args.length > 0) {
                 reason = args[0].toString();
             }
             Log.d(TAG, "Something went wrong with the last event: " + reason);

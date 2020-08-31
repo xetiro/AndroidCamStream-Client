@@ -1,19 +1,30 @@
 <resources>
-    <string name="app_name">Camera Streaming Demo</string>
+    <!-- Global strings -->
+    <string name="app_name">Android Camera Streaming Demo</string>
     <string name="main_activity">MainActivity</string>
+    <string name="title_activity_login">LoginActivity</string>
+
+    <!-- Camera layout strings -->
     <string name="camera_settings">Camera Settings</string>
     <string name="camera_settings_description">USB Camera Image Live Preview</string>
     <string name="camera_resolution">Image Resolution</string>
     <string name="camera_frequency">Upload Frequency</string>
 
+    <!-- Login layout strings -->
     <string name="login_settings">Login Settings</string>
     <string name="login_user_name">Username</string>
     <string name="login_user_password">Password</string>
-    <string name="login_server_name">Server Name</string>
+    <string name="login_server_name">Server Ip</string>
     <string name="login_server_port">Server Port</string>
+    <string name="login_button">Login</string>
 
+    <!-- Toast strings -->
+    <string name="toast_invalid_login">"Invalid login: all fields are required."</string>
+    <string name="toast_authentication_failed">Authentication failed! Check your username and password.</string>
+
+    <!-- Dialog strings -->
     <string name="request_camera_title">Camera Access Needed</string>
     <string name="request_camera_message">This is a prototype demo that streams camera frames to a server. Without camera access it is useless.</string>
-    <string name="title_activity_login">LoginActivity</string>
+
 
 </resources>
