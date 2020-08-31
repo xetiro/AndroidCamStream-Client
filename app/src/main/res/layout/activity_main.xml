@@ -42,7 +42,6 @@
                 android:layout_width="320dp"
                 android:layout_height="240dp"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="20dp"
                 android:background="@color/lb_basic_card_info_bg_color" />
 
             <TextView
@@ -95,14 +94,14 @@
                 android:id="@+id/streamStartButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="25dp"
                 android:backgroundTint="@color/streaming_start"
                 android:text="@string/start_button" />
             <Button
                 android:id="@+id/streamStopButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="25dp"
                 android:backgroundTint="@color/streaming_stop"
                 android:text="@string/stop_button"
                 android:visibility="gone"/>

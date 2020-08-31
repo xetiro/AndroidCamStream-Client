@@ -96,14 +96,14 @@
             android:id="@+id/streamStartButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="25dp"
             android:backgroundTint="@color/streaming_start"
             android:text="@string/start_button" />
         <Button
             android:id="@+id/streamStopButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="25dp"
             android:backgroundTint="@color/streaming_stop"
             android:text="@string/stop_button"
             android:visibility="gone"/>
