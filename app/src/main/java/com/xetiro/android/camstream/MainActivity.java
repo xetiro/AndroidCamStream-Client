@@ -9,7 +9,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -46,9 +48,12 @@ public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivityDebug";
     private static int ACCESS_CAMERA_REQUEST_CODE = 1;
 
-    private ListenableFuture<ProcessCameraProvider> mCameraProviderFuture;
     private PreviewView mCameraPreview;
     private ServerClient mServer;
+
+    // Camera Use-Cases
+    private Preview mPreview;
+    private ImageAnalysis mImageAnalysis;
 
     // The Bitmap image from camera preview is converted to JPEG without artifacts
     // The YUV image from the image Analysis when converted to JPEG sometimes can create artifacts
@@ -61,8 +66,10 @@ public class MainActivity extends AppCompatActivity {
     private long mLastTime = 0;
     private long mUploadDelay = 0;
 
+    private Spinner mResolutionSpinner;
     private SeekBar mFrequencySeekBar;
-
+    private Button mStreamStartButton;
+    private Button mStreamStopButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,7 +82,28 @@ public class MainActivity extends AppCompatActivity {
         mServer = ServerClient.getInstance();
 
         mCameraPreview = findViewById(R.id.cameraView);
+        mResolutionSpinner = findViewById(R.id.cameraResolutionSpinner);
         mFrequencySeekBar = findViewById(R.id.frequencySeekBar);
+        mStreamStartButton = findViewById(R.id.streamStartButton);
+        mStreamStartButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mStreamStartButton.setVisibility(View.GONE);
+                mStreamStopButton.setVisibility(View.VISIBLE);
+                mResolutionSpinner.setEnabled(false);
+                startCameraStreaming();
+            }
+        });
+        mStreamStopButton = findViewById(R.id.streamStopButton);
+        mStreamStopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mStreamStopButton.setVisibility(View.GONE);
+                mStreamStartButton.setVisibility(View.VISIBLE);
+                mResolutionSpinner.setEnabled(true);
+                stopCameraStreaming();
+            }
+        });
         updateStreamingFrequency(mFrequencySeekBar.getProgress());
 
         mFrequencySeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -129,10 +157,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startStreaming() {
-
-    }
-
     private void updateStreamingFrequency(int frequency) {
         TextView frequencyTextView = findViewById(R.id.frequency);
         frequencyTextView.setText("" + frequency + " hz");
@@ -143,42 +167,71 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startCameraPreview() {
+    private void startCameraStreaming() {
         Log.d(TAG, "startCameraPreview");
-        mCameraProviderFuture = ProcessCameraProvider.getInstance(this);
-        mCameraProviderFuture.addListener(() -> {
+        ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        cameraProviderFuture.addListener(() -> {
             try {
-                ProcessCameraProvider cameraProvider = mCameraProviderFuture.get();
-                bindPreview(cameraProvider);
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                bindImageAnalysis(cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
 
             }
         }, ContextCompat.getMainExecutor(this));
     }
 
+    private void stopCameraStreaming() {
+        ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                cameraProvider.unbind(mImageAnalysis);
+            } catch (ExecutionException | InterruptedException e) {
+                // do nothing
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void startCameraPreview() {
+        Log.d(TAG, "startCameraPreview");
+        ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                bindPreview(cameraProvider);
+            } catch (ExecutionException | InterruptedException e) {
+                // do nothing
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
     private void bindPreview(ProcessCameraProvider cameraProvider) {
-        Preview preview = new Preview.Builder().build();
-
-        CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
-
+        mPreview = new Preview.Builder().build();
         // Preview use-case will render a preview image on the screen as defined by the PreviewView
         // element on the main's layout activity. The resolution of the layout is relative to the
         // screen size and defined in dp, which means the final resolution in pixels will be decided
         // at run-time when the layout is inflated to the device screen. But will always be proportional
         // to the resolution defined on the layout.
-        preview.setSurfaceProvider(mCameraPreview.createSurfaceProvider());
+        mPreview.setSurfaceProvider(mCameraPreview.createSurfaceProvider());
 
+        CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
+        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, mPreview);
+    }
+
+    private void bindImageAnalysis(ProcessCameraProvider cameraProvider) {
+        mImageAnalysis = new ImageAnalysis.Builder()
+                .setTargetResolution(new Size(mTargetWidth, mTargetHeight))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)   // non blocking
+                .build();
         // Image Analysis use-case will not render the image on the screen, but will
         // deliver a frame by frame image (stream) directly from the camera buffer to the analyser.
         // On this case we can set an actual target resolution as defined by the user. CameraX will
         // try to match the captured resolution to the target resolution. If it cannot match, will
         // capture the frame with the resolution immediately above.
-        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setTargetResolution(new Size(mTargetWidth, mTargetHeight))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)   // non blocking
-                .build();
-
-        imageAnalysis.setAnalyzer(Executors.newFixedThreadPool(3), image -> {
+        mImageAnalysis.setAnalyzer(Executors.newFixedThreadPool(3), image -> {
             long elapsedTime = System.currentTimeMillis() - mLastTime;
             if (elapsedTime > mUploadDelay && mUploadDelay != 0) {   // Bound the image upload based on the user-defined frequency
                 byte[] byteArray;
@@ -194,8 +247,8 @@ public class MainActivity extends AppCompatActivity {
             image.close();
         });
 
-        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, preview);
-        Log.d(TAG, "Camera rotation: " + camera.getCameraInfo().getSensorRotationDegrees());
+        CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
+        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, mImageAnalysis);
     }
 
     private boolean cameraPermissionGranted() {
