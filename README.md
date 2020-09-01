@@ -26,7 +26,7 @@ Although, this application is meant for experiment under controled use-cases at 
 // TODO
 
 ## How to run
-Just clone the project and open with the latest version of Android Studio. Update/sync your gradle. Build/Run the project. Make sure you have compileSdkVersion of the SDK Tools installed, and you shouldn't major problems.
+Just clone the project and open with the latest version of Android Studio. Update/sync your gradle. Build/Run the project. Make sure you have compileSdkVersion of the SDK Tools installed, and you shouldn't major problems. For your reference, the original code was written with Android Studio 4.0.1.
 
 ## License
 The sourcecode of this project is public under the MIT license. Feel free to fork it and change it at your will to customized it to your own projects.
