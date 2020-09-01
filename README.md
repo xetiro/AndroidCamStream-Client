@@ -2,6 +2,8 @@
 
 A prototype Android client aplication that streams frames, from the front camera, to a server at a certain resolution (i.e. 160x120, 320x240, 640x480, etc) and frequency (i.e. 1hz, 2hz, 5hz, etc).
 
+
+
 ## Quick Overview
 
 ### Motivation
@@ -27,6 +29,8 @@ Although, this application is meant for experiment under controled use-cases at 
 
 ## How to run
 Just clone the project and open with the latest version of Android Studio. Update/sync your gradle. Build/Run the project. Make sure you have compileSdkVersion of the SDK Tools installed, and you shouldn't major problems. For your reference, the original code was written with Android Studio 4.0.1.
+
+- Please notice: To fully run this app use-case you will also need to run the server application AndroidCamStream-Server. Otherwise, the client app will have no endpoint to connect with.
 
 ## License
 The sourcecode of this project is public under the MIT license. Feel free to fork it and change it at your will to customized it to your own projects.
