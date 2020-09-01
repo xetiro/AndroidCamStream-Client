@@ -3,13 +3,10 @@ package com.xetiro.android.camstream;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -17,10 +14,8 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
@@ -32,7 +27,6 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.xetiro.android.camstream.network.ServerClient;
-import com.xetiro.android.camstream.network.ServerResultCallback;
 import com.xetiro.android.camstream.utils.ImageConverter;
 
 import java.util.concurrent.ExecutionException;
@@ -54,13 +48,13 @@ public class MainActivity extends AppCompatActivity {
     private ServerClient mServer;
 
     // Camera Use-Cases
-    private Preview mPreview;
+    private Preview mPreview;   // We are capturing from this one
     private ImageAnalysis mImageAnalysis;
 
-    // The Bitmap image from camera preview is converted to JPEG without artifacts
+    // The Bitmap image from camera preview is converted to JPEG without artifacts.
     // The YUV image from the image Analysis when converted to JPEG sometimes can create artifacts
     // because the conversion might fail for some cameras
-    private boolean useImageFromCameraPreview = true;
+    private boolean mStreamFromCameraPreview = true;
 
     private int mTargetWidth;
     private int mTargetHeight;
@@ -72,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar mFrequencySeekBar;
     private Button mStreamStartButton;
     private Button mStreamStopButton;
+
+    private boolean mIsStreaming = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,10 +84,18 @@ public class MainActivity extends AppCompatActivity {
         mResolutionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedResolution = (String) parent.getItemAtPosition(position);
                 String[] resolutions = getResources().getStringArray(R.array.resolution_array);
-                String[] targetResolution = resolutions[position].split("\\s*x\\s*");
-                mTargetWidth = Integer.parseInt(targetResolution[0]);
-                mTargetHeight = Integer.parseInt(targetResolution[1]);
+                String[] targetResolution = selectedResolution.split("\\s*x\\s*");
+                try {
+                    mTargetWidth = Integer.parseInt(targetResolution[0]);
+                    mTargetHeight = Integer.parseInt(targetResolution[1]);
+                } catch(NumberFormatException e) {
+                    // Fallback to default
+                    mTargetWidth = 320;
+                    mTargetHeight = 240;
+                }
+
                 Log.d(TAG, "new width = " + mTargetWidth + " new height = " + mTargetHeight);
             }
             @Override
@@ -107,7 +111,12 @@ public class MainActivity extends AppCompatActivity {
                 mStreamStartButton.setVisibility(View.GONE);
                 mStreamStopButton.setVisibility(View.VISIBLE);
                 mResolutionSpinner.setEnabled(false);
-                startCameraStreaming();
+
+                if(mStreamFromCameraPreview) {
+                    startStreaming();
+                } else {
+                    startCameraImageAnalysis();
+                }
             }
         });
         mStreamStopButton = findViewById(R.id.streamStopButton);
@@ -117,7 +126,12 @@ public class MainActivity extends AppCompatActivity {
                 mStreamStopButton.setVisibility(View.GONE);
                 mStreamStartButton.setVisibility(View.VISIBLE);
                 mResolutionSpinner.setEnabled(true);
-                stopCameraStreaming();
+
+                if(mStreamFromCameraPreview){
+                    stopStreaming();
+                } else {
+                   stopCameraImageAnalysis();
+                }
             }
         });
         updateStreamingFrequency(mFrequencySeekBar.getProgress());
@@ -157,6 +171,8 @@ public class MainActivity extends AppCompatActivity {
     public void onPause() {
         Log.d(TAG, "onPause");
         super.onPause();
+        if(mIsStreaming)
+            stopStreaming();
         mServer.disconnect();
     }
 
@@ -183,27 +199,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startCameraStreaming() {
+    private void startCameraImageAnalysis() {
         Log.d(TAG, "startCameraPreview");
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-                bindImageAnalysis(cameraProvider);
+                bindImageAnalysis(cameraProvider);  // The stream will start after the bind
             } catch (ExecutionException | InterruptedException e) {
 
             }
         }, ContextCompat.getMainExecutor(this));
     }
 
-    private void stopCameraStreaming() {
+    private void stopCameraImageAnalysis() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-                cameraProvider.unbind(mImageAnalysis);
+                cameraProvider.unbind(mImageAnalysis);  // The stream will stop after the unbind
             } catch (ExecutionException | InterruptedException e) {
                 // do nothing
             }
@@ -222,6 +238,30 @@ public class MainActivity extends AppCompatActivity {
                 // do nothing
             }
         }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void startStreaming() {
+        mIsStreaming = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(mIsStreaming) {
+                    long elapsedTime = System.currentTimeMillis() - mLastTime;
+                    if (elapsedTime > mUploadDelay && mUploadDelay != 0) {   // Bound the image upload based on the user-defined frequency
+                        byte[] byteArray;
+                        Bitmap bmp = mCameraPreview.getBitmap();
+                        Bitmap bmp2 = Bitmap.createScaledBitmap(bmp, mTargetWidth, mTargetHeight, false);
+                        byteArray = ImageConverter.BitmaptoJPEG(bmp2);
+                        mServer.sendImage(byteArray);
+                        mLastTime = System.currentTimeMillis();
+                    }
+                }
+            }
+        }).start();
+    }
+
+    private void stopStreaming() {
+        mIsStreaming = false;
     }
 
     private void bindPreview(ProcessCameraProvider cameraProvider) {
@@ -251,15 +291,9 @@ public class MainActivity extends AppCompatActivity {
             long elapsedTime = System.currentTimeMillis() - mLastTime;
             if (elapsedTime > mUploadDelay && mUploadDelay != 0) {   // Bound the image upload based on the user-defined frequency
                 byte[] byteArray;
-                if (useImageFromCameraPreview) {
-                    // Source 1: Using bitmap from camera preview
-                    Bitmap bmp = mCameraPreview.getBitmap();
-                    Bitmap bmp2 = Bitmap.createScaledBitmap(bmp, mTargetWidth, mTargetHeight, false);
-                    byteArray = ImageConverter.BitmaptoJPEG(bmp2);
-                } else {
-                    // Source 2: This its a better camera stream but the conversion might create artifacts with some cameras
-                    byteArray = ImageConverter.YUV_420_800toJPEG(image);
-                }
+                // This its a better camera stream but the conversion might create artifacts with
+                // some cameras. Needs more investigation
+                byteArray = ImageConverter.YUV_420_800toJPEG(image);
                 mServer.sendImage(byteArray);
                 mLastTime = System.currentTimeMillis();
             }

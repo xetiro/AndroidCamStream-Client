@@ -65,13 +65,9 @@ public class ServerClient {
                 e.printStackTrace();
             }
         } else {
-            Log.d(TAG, "ServerClient already initialized.");
-        }
-
-        // If it is still null its because it failed to initialize
-        if (mSocket == null) {
-            // We failed to connect, consider to inform the user
-            Log.d(TAG, "Failed to create socket with the server.");
+            Log.d(TAG, "ServerClient already initialized. Clearing sockets. Try again...");
+            mSocket.disconnect();
+            mSocket = null;
         }
     }
 

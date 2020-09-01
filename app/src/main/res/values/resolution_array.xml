@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- It is recommended to use resolutions with the same aspect ratio of the Camera Image Preview
+    as defined on the main activity layout, since this first version captures the frames from the preview
+    directly (using 4:3) aspect ratio. -->
     <string-array name="resolution_array">
-        <!--
-        This strings will be parsed at runtime. If you don't respect the format the application
-        might crash. You can add more resolutions but please respect the format.
-        -->
         <!-- width x height -->
         <item>160 x 120</item>
         <item>192 x 144</item>
