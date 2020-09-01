@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="resolution_array">
-        <item>240p (320x240, 4:3)</item>
-        <item>360p (480x320, 4:3)</item>
-        <item>480p (640x480, 4:3)</item>
-        <item>720p (1280x720, 16:9)</item>
-        <item>1080p (1920x1080, 16:9)</item>
+        <!--
+        This strings will be parsed at runtime. If you don't respect the format the application
+        might crash. You can add more resolutions but please respect the format.
+        -->
+        <!-- width x height -->
+        <item>160 x 120</item>
+        <item>192 x 144</item>
+        <item>320 x 240</item>
+        <item>640 x 480</item>
+        <item>800 x 600</item>
+        <item>1024 x 768</item>
+        <item>1280 x 960</item>
     </string-array>
 </resources>

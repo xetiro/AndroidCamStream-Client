@@ -6,10 +6,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.SeekBar;
@@ -60,8 +62,8 @@ public class MainActivity extends AppCompatActivity {
     // because the conversion might fail for some cameras
     private boolean useImageFromCameraPreview = true;
 
-    private int mTargetWidth = 320;
-    private int mTargetHeight = 240;
+    private int mTargetWidth;
+    private int mTargetHeight;
 
     private long mLastTime = 0;
     private long mUploadDelay = 0;
@@ -83,6 +85,20 @@ public class MainActivity extends AppCompatActivity {
 
         mCameraPreview = findViewById(R.id.cameraView);
         mResolutionSpinner = findViewById(R.id.cameraResolutionSpinner);
+        mResolutionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String[] resolutions = getResources().getStringArray(R.array.resolution_array);
+                String[] targetResolution = resolutions[position].split("\\s*x\\s*");
+                mTargetWidth = Integer.parseInt(targetResolution[0]);
+                mTargetHeight = Integer.parseInt(targetResolution[1]);
+                Log.d(TAG, "new width = " + mTargetWidth + " new height = " + mTargetHeight);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
         mFrequencySeekBar = findViewById(R.id.frequencySeekBar);
         mStreamStartButton = findViewById(R.id.streamStartButton);
         mStreamStartButton.setOnClickListener(new View.OnClickListener() {
@@ -236,9 +252,12 @@ public class MainActivity extends AppCompatActivity {
             if (elapsedTime > mUploadDelay && mUploadDelay != 0) {   // Bound the image upload based on the user-defined frequency
                 byte[] byteArray;
                 if (useImageFromCameraPreview) {
+                    // Source 1: Using bitmap from camera preview
                     Bitmap bmp = mCameraPreview.getBitmap();
-                    byteArray = ImageConverter.BitmaptoJPEG(bmp);
+                    Bitmap bmp2 = Bitmap.createScaledBitmap(bmp, mTargetWidth, mTargetHeight, false);
+                    byteArray = ImageConverter.BitmaptoJPEG(bmp2);
                 } else {
+                    // Source 2: This its a better camera stream but the conversion might create artifacts with some cameras
                     byteArray = ImageConverter.YUV_420_800toJPEG(image);
                 }
                 mServer.sendImage(byteArray);
