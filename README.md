@@ -6,7 +6,7 @@ A prototype Android client aplication that streams frames, from the front camera
 ## Quick Overview
 
 ### Motivation
-This application was developed as a prototype client Android application (AndroidCamStream-Client), to allow to experiment with the use-case of client/server image stream processing, where the user's mobile device is the source of the frames and the remote server (AndroidCamStream-Server) is where the image is received for further processing.
+This application was developed as a prototype client Android application (AndroidCamStream-Client), to allow to experiment with the use-case of client/server image stream processing, where the user's mobile device is the source of the frames and the remote server (AndroidCamStream-Server) is where the images are received for further processing.
 
 ### User Interaction
 The user is first prompt to login into a server (LoginActivity) and then prompt to start streaming the front camera live feed (MainActivity). While streaming the user can change the frequency in real-time (Seekbar) but not the resolution. To change the resolution the user must stop streaming first, change the resolution (Spinner) and then start streaming again. 
